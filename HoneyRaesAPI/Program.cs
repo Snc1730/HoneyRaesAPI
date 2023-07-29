@@ -86,6 +86,14 @@ app.MapGet("/servicetickets", () =>
     return serviceTickets;
 });
 
+app.MapPost("/servicetickets", (ServiceTicket serviceTicket) =>
+{
+    // creates a new id (When we get to it later, our SQL database will do this for us like JSON Server did!)
+    serviceTicket.Id = serviceTickets.Max(st => st.Id) + 1;
+    serviceTickets.Add(serviceTicket);
+    return serviceTicket;
+});
+
 app.MapGet("/servicetickets/{id}", (int id) =>
 {
     ServiceTicket serviceTicket = serviceTickets.FirstOrDefault(st => st.Id == id);
@@ -97,6 +105,50 @@ app.MapGet("/servicetickets/{id}", (int id) =>
     serviceTicket.Customer = customers.FirstOrDefault(cu => cu.Id == id);
     return Results.Ok(serviceTicket);
 });
+
+app.MapDelete("/servicetickets/{id}", (int id) =>
+{
+    ServiceTicket serviceTicketToDelete = serviceTickets.FirstOrDefault(st => st.Id == id);
+    if (serviceTicketToDelete == null)
+    {
+        return Results.NotFound("Service ticket not found.");
+    }
+
+    serviceTickets.Remove(serviceTicketToDelete);
+
+    return Results.NoContent();
+});
+
+app.MapPut("/servicetickets/{id}", (int id, ServiceTicket serviceTicket) =>
+{
+    ServiceTicket ticketToUpdate = serviceTickets.FirstOrDefault(st => st.Id == id);
+    int ticketIndex = serviceTickets.IndexOf(ticketToUpdate);
+    if (ticketToUpdate == null)
+    {
+        return Results.NotFound();
+    }
+    //the id in the request route doesn't match the id from the ticket in the request body. That's a bad request!
+    if (id != serviceTicket.Id)
+    {
+        return Results.BadRequest();
+    }
+    serviceTickets[ticketIndex] = serviceTicket;
+    return Results.Ok();
+});
+
+app.MapPost("/servicetickets/{id}/complete", (int id) =>
+{
+    ServiceTicket ticketToComplete = serviceTickets.FirstOrDefault(st => st.Id == id);
+    if (ticketToComplete == null)
+    {
+        return Results.NotFound("Service ticket not found.");
+    }
+
+    ticketToComplete.DateCompleted = DateTime.Today;
+
+    return Results.NoContent();
+});
+
 
 app.MapGet("/employees", () =>
 {
