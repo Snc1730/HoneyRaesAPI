@@ -98,6 +98,47 @@ app.MapGet("/servicetickets/{id}", (int id) =>
     return Results.Ok(serviceTicket);
 });
 
+app.MapGet("/employees", () =>
+{
+    return employees;
+});
+
+app.MapGet("/employees/{id}", (int id) =>
+{
+    Employee employee = employees.FirstOrDefault(emp => emp.Id == id);
+    if (employee == null)
+    {
+        return Results.NotFound("No employee found.");
+    }
+
+    employee.ServiceTickets = serviceTickets.Where(st => st.EmployeeId == id).ToList();
+
+    return Results.Ok(employee);
+});
+
+
+app.MapGet("/customers", () =>
+{
+    return customers;
+});
+
+app.MapGet("/customers/{id}", (int id) =>
+{
+    Customer customer = customers.FirstOrDefault(c => c.Id == id);
+    if (customer == null)
+    {
+        return Results.NotFound("No customer found.");
+    }
+
+    // Find the service tickets associated with this customer
+    customer.ServiceTickets = serviceTickets.Where(st => st.CustomerId == id).ToList();
+
+    return Results.Ok(customer);
+});
+
+
+
+
 app.UseHttpsRedirection();
 
 app.UseAuthorization();
