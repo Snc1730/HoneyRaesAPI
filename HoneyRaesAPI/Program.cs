@@ -59,7 +59,7 @@ List<HoneyRaesAPI.Models.ServiceTicket> serviceTickets = new List<HoneyRaesAPI.M
                 EmployeeId = 1,
                 Description = "Ticket #4: Printer not responding in the accounting department",
                 Emergency = false,
-                DateCompleted = DateTime.Now
+                DateCompleted = new DateTime(2020,05,18)
             },
             new ServiceTicket
             {
@@ -151,12 +151,17 @@ app.MapPost("/servicetickets/{id}/complete", (int id) =>
 
 app.MapGet("/servicetickets/incomplete-emergencies", () =>
 {
-    // Filter the service tickets to get only the ones that are incomplete and marked as emergencies
     var incompleteEmergencies = serviceTickets.Where(st => st.Emergency && st.DateCompleted == null).ToList();
 
     return Results.Ok(incompleteEmergencies);
 });
 
+app.MapGet("/unassignedservicetickets", () =>
+{
+    var unassignedServiceTickets = serviceTickets.Where(st => st.EmployeeId == null).ToList();
+
+    return Results.Ok(unassignedServiceTickets);
+});
 
 app.MapGet("/employees", () =>
 {
@@ -206,6 +211,31 @@ app.MapGet("/customers/{id}", (int id) =>
     customer.ServiceTickets = serviceTickets.Where(st => st.CustomerId == id).ToList();
 
     return Results.Ok(customer);
+});
+
+app.MapGet("/customers/notclosedforyear", () =>
+{
+    DateTime oneYearAgo = DateTime.Today.AddYears(-1);
+
+    var customersNotClosedForYear = customers.Where(cust =>
+        !serviceTickets.Any(st => st.CustomerId == cust.Id && st.DateCompleted != null && st.DateCompleted >= oneYearAgo)
+    ).ToList();
+
+    return Results.Ok(customersNotClosedForYear);
+});
+
+app.MapGet("/customers/assignedtoemployee/{employeeId}", (int employeeId) =>
+{
+    var customerIdsForEmployee = serviceTickets
+        .Where(st => st.EmployeeId == employeeId)
+        .Select(st => st.CustomerId)
+        .Distinct();
+
+    var customersForEmployee = customers
+        .Where(cust => customerIdsForEmployee.Contains(cust.Id))
+        .ToList();
+
+    return Results.Ok(customersForEmployee);
 });
 
 app.UseHttpsRedirection();
