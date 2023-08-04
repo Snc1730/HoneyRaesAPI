@@ -149,6 +149,14 @@ app.MapPost("/servicetickets/{id}/complete", (int id) =>
     return Results.NoContent();
 });
 
+app.MapGet("/servicetickets/incomplete-emergencies", () =>
+{
+    // Filter the service tickets to get only the ones that are incomplete and marked as emergencies
+    var incompleteEmergencies = serviceTickets.Where(st => st.Emergency && st.DateCompleted == null).ToList();
+
+    return Results.Ok(incompleteEmergencies);
+});
+
 
 app.MapGet("/employees", () =>
 {
@@ -168,6 +176,18 @@ app.MapGet("/employees/{id}", (int id) =>
     return Results.Ok(employee);
 });
 
+app.MapGet("/availableEmployees", () =>
+{
+    var assignedEmployeeIds = serviceTickets
+        .Where(st => st.DateCompleted == null && st.EmployeeId != null)
+        .Select(st => st.EmployeeId);
+
+    var availableEmployees = employees
+        .Where(emp => !assignedEmployeeIds.Contains(emp.Id))
+        .ToList();
+
+    return Results.Ok(availableEmployees);
+});
 
 app.MapGet("/customers", () =>
 {
@@ -187,9 +207,6 @@ app.MapGet("/customers/{id}", (int id) =>
 
     return Results.Ok(customer);
 });
-
-
-
 
 app.UseHttpsRedirection();
 
