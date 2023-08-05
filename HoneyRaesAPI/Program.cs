@@ -41,7 +41,7 @@ List<HoneyRaesAPI.Models.ServiceTicket> serviceTickets = new List<HoneyRaesAPI.M
                 EmployeeId = 3,
                 Description = "Ticket #2: Network connectivity issue in the main office",
                 Emergency = true,
-                DateCompleted = DateTime.Now
+                DateCompleted = new DateTime(2023,07,15)
             },
             new ServiceTicket
             {
@@ -50,7 +50,7 @@ List<HoneyRaesAPI.Models.ServiceTicket> serviceTickets = new List<HoneyRaesAPI.M
                 EmployeeId = 2,
                 Description = "Ticket #3: Software installation problem on user's computer",
                 Emergency = false,
-                DateCompleted = DateTime.Now
+                DateCompleted = new DateTime(2023,07,01)
             },
             new ServiceTicket
             {
@@ -163,9 +163,44 @@ app.MapGet("/unassignedservicetickets", () =>
     return Results.Ok(unassignedServiceTickets);
 });
 
+app.MapGet("/completedtickets/oldestfirst", () =>
+{
+    var completedTicketsOldestFirst = serviceTickets
+        .Where(st => st.DateCompleted != null)
+        .OrderBy(st => st.DateCompleted)
+        .ToList();
+
+    return Results.Ok(completedTicketsOldestFirst);
+});
+
+app.MapGet("/incompletetickets/order", () =>
+{
+    var incompleteTickets = serviceTickets
+        .Where(st => st.DateCompleted == null)
+        .ToList();
+
+    var orderedIncompleteTickets = incompleteTickets
+        .OrderByDescending(st => st.Emergency)
+        .ThenBy(st => st.EmployeeId == null)
+        .ToList();
+
+    return Results.Ok(orderedIncompleteTickets);
+});
+
 app.MapGet("/employees", () =>
 {
     return employees;
+});
+
+app.MapGet("/employeeofthemonth", () =>
+{
+    DateTime lastMonth = DateTime.Today.AddMonths(-1);
+
+    var employeeOfTheMonth = employees
+        .OrderByDescending(emp => serviceTickets.Count(st => st.EmployeeId == emp.Id && st.DateCompleted >= lastMonth))
+        .FirstOrDefault();
+
+    return Results.Ok(employeeOfTheMonth);
 });
 
 app.MapGet("/employees/{id}", (int id) =>
